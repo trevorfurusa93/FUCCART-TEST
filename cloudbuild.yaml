@@ -1,33 +1,28 @@
-# cloudbuild.yaml - POC for FUCCART-TEST
-# Builds the Java project, runs tests, optionally stores artifacts in GCS
-
+# cloudbuild.yaml - FUCCART POC
 steps:
-  # Step 1: Build the Java project with Maven
-  - name: 'maven:3.6.3-jdk-25'
+  # Step 1: Build the project
+  - name: 'maven:3.9.1-openjdk-25'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         echo "===== Starting Build ====="
-        # Go to project folder where pom.xml lives
-        cd "Documents/LITT Project Folder/demo"
-        echo "Building project with Maven..."
+        cd "Documents/LITTProjectFolder/demo"
         mvn clean install
 
-  # Step 2: Optional - run tests separately for clarity
-  - name: 'maven:3.6.3-jdk-25'
+  # Step 2: Run unit tests
+  - name: 'maven:3.9.1-openjdk-25'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         echo "===== Running Unit Tests ====="
-        cd "Documents/LITT Project Folder/demo"
+        cd "Documents/LITTProjectFolder/demo"
         mvn test
 
-# Optional: store build artifacts in a GCS bucket (POC safe)
-# Remove this step if you just want to test build without creating buckets
+# Optional: store build artifacts in GCS (POC safe)
 artifacts:
   objects:
     location: 'gs://fuccart-test-artifacts-demo/'
     paths:
-      - 'Documents/LITT Project Folder/demo/target/*.jar'
+      - 'Documents/LITTProjectFolder/demo/target/*.jar'
