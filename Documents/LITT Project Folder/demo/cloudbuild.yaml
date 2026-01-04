@@ -1,0 +1,25 @@
+# cloudbuild.yaml - POC for FUCCART-TEST
+steps:
+  # Step 1: Build the Java project with Maven
+  - name: 'maven:3.6.3-jdk-25'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "===== Cloning repo and building project ====="
+        mvn clean install
+
+  # Step 2: Optional - Run unit tests (already included in Maven default build)
+  - name: 'maven:3.6.3-jdk-25'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "===== Running tests ====="
+        mvn test
+
+# Optional: store build artifacts in GCS (safe, no deploy yet)
+artifacts:
+  objects:
+    location: 'gs://YOUR_ARTIFACT_BUCKET/fuccart-test/'
+    paths: ['target/*.jar']
