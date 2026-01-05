@@ -1,28 +1,90 @@
-# cloudbuild.yaml - FUCCART POC
+# Cloud Build configuration for FUCCART-TEST application
+# This will build and deploy to Cloud Run automatically
+
 steps:
-  # Step 1: Build the project
-  - name: 'maven:3.9.1-openjdk-25'
+  # Step 1: Install frontend dependencies and build React app
+  - name: 'node:18-alpine'
+    id: 'build-frontend'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        echo "Building React frontend..."
+        cd frontend
+        npm ci
+        npm run build
+        echo "Frontend build complete!"
+    dir: '.'
+
+  # Step 2: Install backend dependencies
+  - name: 'node:18-alpine'
+    id: 'install-backend'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        echo "Installing backend dependencies..."
+        npm ci --only=production
+        echo "Backend dependencies installed!"
+    dir: '.'
+
+  # Step 3: Run tests (if you have them)
+  # Uncomment when you have tests set up
+  # - name: 'node:18-alpine'
+  #   id: 'run-tests'
+  #   entrypoint: 'sh'
+  #   args:
+  #     - '-c'
+  #     - |
+  #       echo "Running tests..."
+  #       npm test
+  #       echo "Tests completed!"
+  #   dir: '.'
+
+  # Step 4: Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'deploy'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        echo "===== Starting Build ====="
-        cd "Documents/LITTProjectFolder/demo"
-        mvn clean install
+        echo "Deploying to Cloud Run..."
+        gcloud run deploy fuccart-app \
+          --source=. \
+          --platform=managed \
+          --region=us-central1 \
+          --allow-unauthenticated \
+          --memory=512Mi \
+          --cpu=1 \
+          --port=8080 \
+          --max-instances=3 \
+          --timeout=300s
+        echo "Deployment complete!"
+    dir: '.'
 
-  # Step 2: Run unit tests
-  - name: 'maven:3.9.1-openjdk-25'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        echo "===== Running Unit Tests ====="
-        cd "Documents/LITTProjectFolder/demo"
-        mvn test
+# Timeout for the build (30 minutes)
+timeout: 1800s
 
-# Optional: store build artifacts in GCS (POC safe)
+# Optional: Add tags to your build
+tags: ['nodejs', 'express', 'react', 'cloud-run']
+
+# Optional: Store build artifacts
 artifacts:
   objects:
-    location: 'gs://fuccart-test-artifacts-demo/'
-    paths:
-      - 'Documents/LITTProjectFolder/demo/target/*.jar'
+    location: 'gs://${PROJECT_ID}_cloudbuild/fuccart-artifacts/'
+    paths: ['frontend/build/**']
+
+# Optional: Logs settings
+options:
+  logging: CLOUD_LOGGING_ONLY
+  dynamicSubstitutions: true
+
+# Optional: Machine type for faster builds
+# options:
+#   machineType: 'E2_HIGHCPU_8'
+
+# Optional: Substitutions for dynamic values
+substitutions:
+  _SERVICE_NAME: 'fuccart-app'
+  _REGION: 'us-central1'
+  _MEMORY: '512Mi'
